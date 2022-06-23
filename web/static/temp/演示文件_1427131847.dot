@@ -1,0 +1,27 @@
+digraph G {
+rankdir=LR;
+subgraph cluster_ {
+style = rounded;
+label = "";
+__START__[color=black fillcolor=deepskyblue style=filled shape=Msquare label="START"];
+__STOP__[color=black fillcolor=deepskyblue style=filled shape=Msquare label="STOP"];
+_opr5 [label="opr5" color=black fillcolor=linen style=filled];
+_opr6 [label="opr6" color=black fillcolor=linen style=filled];
+_opr1 [label="opr1" color=black fillcolor=linen style=filled];
+_opr2 [label="opr2" color=black fillcolor=linen style=filled];
+_opr3 [label="opr3" color=black fillcolor=linen style=filled];
+_opr4 [label="opr4" color=black fillcolor=linen style=filled];
+_cond1 [label="opr3 > opr2" shape=diamond color=black fillcolor=aquamarine style=filled];
+
+__START__ -> _opr1;
+_opr1 -> _opr2 [style=bold label="all"];
+_opr1 -> _opr3 [style=bold label="all"];
+_opr3 -> _opr4 [style=bold label="all"];
+_opr2 -> _opr4 [style=bold label="all"];
+_opr4 -> _cond1 [style=bold label="all"];
+_opr5 -> __STOP__;
+_cond1 -> _opr5 [style=dashed label="ok"];
+_opr6 -> __STOP__;
+_cond1 -> _opr6 [style=dashed color=red label="fail"];
+};
+}

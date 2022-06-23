@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+
+    <style>
+        .el-input {
+            margin-bottom: 10px;
+        }
+
+        .el-row {
+            margin-left: 10px;
+        }
+
+        .el-col {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+
+<body>
+<div id="app" style="min-height: 950px">
+    <el-row>
+        <div>
+            <template>
+                <el-select v-model="version" placeholder="历史版本选择" @change="handleVersionSelect">
+                    <el-option
+                            v-for="item in options"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                    </el-option>
+                </el-select>
+            </template>
+        </div>
+    </el-row>
+
+    <el-row :gutter="20">
+        <el-col :span="10">
+            <div>
+                <el-input
+                        type="textarea"
+                        :rows="40"
+                        placeholder="无内容"
+                        readonly
+                        v-model="textArea">
+                </el-input>
+            </div>
+        </el-col>
+
+        <el-col :span="10">
+            <div>
+                <el-input
+                        type="textarea"
+                        :rows="40"
+                        placeholder="请输入内容"
+                        v-model="editArea">
+                </el-input>
+            </div>
+        </el-col>
+
+        <el-col :span="3">
+            <div>
+                <h3 id="name"></h3>
+                <el-button @click="check" type="primary">校验</el-button>
+                <el-button @click="save" type="success">保存</el-button>
+                <br/><br/><br/><br/>
+                <h3>发布版本</h3>
+                <template>
+                    <el-select v-model="publishVersion" placeholder="版本选择">
+                        <el-option
+                                v-for="item in options"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value">
+                        </el-option>
+                    </el-select>
+                </template>
+                <el-button @click="publish" type="danger">发布</el-button>
+            </div>
+        </el-col>
+    </el-row>
+
+    <template>
+        <div>
+            <el-dialog title="构建测试通过" :visible.sync="checkDialogVisible" width="50%">
+                <el-image
+                        style="width: 100%; height: 100%"
+                        :src="pngURL"
+                        :fit="contain"></el-image>
+                <div slot="footer" class="dialog-footer">
+                    <el-button @click="checkDialogVisible = false">确 定</el-button>
+                </div>
+            </el-dialog>
+        </div>
+    </template>
+
+</div>
+</body>
+
+<!-- import Vue before Element -->
+<script src="static/js/vue@2.6.14.js"></script>
+<!-- 引入组件库 -->
+<script src="static/js/element-ui-index@2.15.9.js"></script>
+
+<script src="static/js/axios.min.js"></script>
+
+<script>
+    const ScriptApiBaseURL = 'api/script/'
+
+    let name = getQueryString("name")
+    document.getElementById('name').innerHTML = '配置文件名: ' + name;
+
+    function getQueryString(name) {
+        let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        let r = window.location.search.substr(1).match(reg);
+        if (r != null) {
+            return decodeURIComponent(r[2]);
+        }
+        return null;
+    }
+
+    function setCookie(name, value, day) {
+        let date = new Date()
+        date.setDate(date.getDate() + day)
+        document.cookie = name + '=' + value + ';expires=' + date
+    }
+
+    function getCookie(name) {
+        let reg = RegExp(name + '=([^;]+)')
+        let arr = document.cookie.match(reg)
+        if (arr) {
+            return arr[1]
+        } else {
+            return null
+        }
+    }
+
+    function getAllVerScripts(vueObj) {
+        axios({
+            method: 'get',
+            url: ScriptApiBaseURL + 'getAll?name=' + name
+        }).then(response => {
+            if (response.data.Code === 200) {
+                vueObj.scripts = response.data.Scripts
+                let options = []
+                for (var i = 0; i < vueObj.scripts.length; i++) {
+                    options.push({
+                        value: vueObj.scripts[i].version,
+                        label: vueObj.scripts[i].version
+                    })
+                }
+                vueObj.options = options
+                if (vueObj.options.length > 0) {
+                    vueObj.version = vueObj.options[vueObj.options.length - 1].value
+                    vueObj.textArea = vueObj.scripts[vueObj.scripts.length - 1].content
+
+                    let storedText = getCookie(name);
+                    vueObj.editArea = storedText == null ? vueObj.textArea : decodeURIComponent(storedText)
+                }
+            } else {
+                alert(response.data.Msg)
+            }
+        }).catch(error => {
+            console.log(error);
+        });
+    }
+
+    var app = new Vue({
+        el: "#app",
+        mounted() {
+            getAllVerScripts(this)
+            window.addEventListener('beforeunload', e => this.beforeunloadHandler(e))
+        },
+        methods: {
+            beforeunloadHandler(e) {
+                alert("before close")
+                setCookie(name, encodeURIComponent(this.editArea), 14)
+            },
+            handleVersionSelect(value) {
+                this.textArea = this.scripts[value - 1].content
+            },
+            check() {
+                axios({
+                    method: 'post',
+                    url: ScriptApiBaseURL + 'check',
+                    data: {
+                        script_name: name,
+                        content: this.editArea,
+                    }
+                }).then(response => {
+                    if (response.data.Code === 200) {
+                        if (response.data.hasOwnProperty("PNGPath")) {
+                            this.pngURL = response.data.PNGPath
+                            this.checkDialogVisible = true
+                        } else {
+                            this.$alert(`<strong><p>${response.data.Msg}</p></strong>`, '校验失败，错误信息:', {
+                                dangerouslyUseHTMLString: true
+                            });
+                        }
+                    } else {
+                        this.$alert(response.data.Msg)
+                    }
+                }).catch(error => {
+                    console.log(error);
+                });
+            },
+            save() {
+                axios({
+                    method: 'post',
+                    url: ScriptApiBaseURL + 'add',
+                    data: {
+                        script_name: name,
+                        content: this.editArea,
+                        version: this.options.length > 0 ? (this.options[this.options.length - 1].value + 1) : 1,
+                    }
+                }).then(response => {
+                    if (response.data.Code === 200) {
+                        this.$alert(response.data.Msg)
+                        getAllVerScripts(this)
+                    } else {
+                        this.$alert(response.data.Msg)
+                    }
+                }).catch(error => {
+                    console.log(error);
+                });
+            },
+            publish() {
+                if (this.publishVersion == null) {
+                    this.$alert("请选择发布版本！")
+                    return
+                }
+                axios({
+                    method: 'post',
+                    url: ScriptApiBaseURL + 'publish',
+                    data: {
+                        script_name: name,
+                        version: this.publishVersion,
+                    }
+                }).then(response => {
+                    if (response.data.Code === 200) {
+                        this.$alert('发布成功版本' + this.publishVersion + `成功`);
+                    } else {
+                        console.log(response.data)
+                        this.$alert(`<strong><p>${response.data.Msg}</p></strong>`, '发布失败，错误信息:', {
+                            dangerouslyUseHTMLString: true
+                        });
+                    }
+                }).catch(error => {
+                    console.log(error);
+                });
+            }
+        },
+        data: function () {
+            return {
+                pngURL: null,
+                textArea: ``,
+                editArea: ``,
+                scripts: null,
+                options: null,
+                publishVersion: null,
+                version: null,
+                checkDialogVisible: false
+            }
+        }
+    })
+</script>

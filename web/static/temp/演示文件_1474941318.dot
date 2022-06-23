@@ -1,0 +1,27 @@
+digraph G {
+rankdir=LR;
+subgraph cluster_graph1 {
+style = rounded;
+label = "graph1";
+graph1__START__[color=black fillcolor=deepskyblue style=filled shape=Msquare label="START"];
+graph1__STOP__[color=black fillcolor=deepskyblue style=filled shape=Msquare label="STOP"];
+graph1_opr3 [label="opr3" color=black fillcolor=linen style=filled];
+graph1_opr4 [label="opr4" color=black fillcolor=linen style=filled];
+graph1_cond1 [label="opr3 > opr2" shape=diamond color=black fillcolor=aquamarine style=filled];
+graph1_opr5 [label="opr5" color=black fillcolor=linen style=filled];
+graph1_opr6 [label="opr6" color=black fillcolor=linen style=filled];
+graph1_opr1 [label="opr1" color=black fillcolor=linen style=filled];
+graph1_opr2 [label="opr2" color=black fillcolor=linen style=filled];
+
+graph1_opr6 -> graph1__STOP__;
+graph1_cond1 -> graph1_opr6 [style=dashed color=red label="fail"];
+graph1__START__ -> graph1_opr1;
+graph1_opr1 -> graph1_opr2 [style=bold label="all"];
+graph1_opr1 -> graph1_opr3 [style=bold label="all"];
+graph1_opr2 -> graph1_opr4 [style=bold label="all"];
+graph1_opr3 -> graph1_opr4 [style=bold label="all"];
+graph1_opr4 -> graph1_cond1 [style=bold label="all"];
+graph1_opr5 -> graph1__STOP__;
+graph1_cond1 -> graph1_opr5 [style=dashed label="ok"];
+};
+}
